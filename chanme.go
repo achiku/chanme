@@ -4,23 +4,41 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 )
 
-var iniBlock = genesis()
-var blockChain = []*Block{iniBlock}
+// Chain chain
+type Chain struct {
+	Blocks []*Block `json:"blocks"`
+	mux    sync.Mutex
+}
+
+// NewBlockChain new chain
+func NewBlockChain() *Chain {
+	return &Chain{
+		Blocks: []*Block{genesis()},
+	}
+}
 
 // Block block
 type Block struct {
-	Index        int64
-	PreviousHash string
-	Timestamp    int64
-	Data         string
-	Hash         string
+	Index        int64  `json:"index"`
+	PreviousHash string `json:"previous_hash"`
+	Timestamp    int64  `json:"timestamp"`
+	Data         string `json:"data"`
+	Hash         string `json:"hash"`
 }
 
 // GenerateNextBlock generate next block
-func GenerateNextBlock(prev *Block, data string) *Block {
+func (cn *Chain) GenerateNextBlock(data string) (*Block, error) {
+	if len(cn.Blocks) == 0 {
+		return nil, errors.New("block lenght = 0")
+	}
+	cn.mux.Lock()
+	defer cn.mux.Unlock()
+
+	prev := cn.Blocks[len(cn.Blocks)-1]
 	b := &Block{
 		Index:        prev.Index + 1,
 		PreviousHash: prev.Hash,
@@ -28,7 +46,8 @@ func GenerateNextBlock(prev *Block, data string) *Block {
 		Data:         data,
 	}
 	b.Hash = Hash(b)
-	return b
+	cn.Blocks = append(cn.Blocks, b)
+	return b, nil
 }
 
 // genesis get the first block
@@ -50,13 +69,13 @@ func Hash(b *Block) string {
 }
 
 // ValidateNewBlock validate paired blocks
-func ValidateNewBlock(prev, n *Block) error {
+func ValidateNewBlock(prev, next *Block) error {
 	switch {
-	case prev.Index+1 != n.Index:
+	case prev.Index+1 != next.Index:
 		return errors.New("invalid index")
-	case prev.Hash != n.PreviousHash:
+	case prev.Hash != next.PreviousHash:
 		return errors.New("invalid previous hash")
-	case n.Hash != Hash(n):
+	case next.Hash != Hash(next):
 		return errors.New("invalid hash")
 	default:
 		return nil
@@ -64,29 +83,31 @@ func ValidateNewBlock(prev, n *Block) error {
 }
 
 // ValidateBlockChain validate block chain
-func ValidateBlockChain(bc []*Block) error {
-	ib := bc[0]
-	if ib.Hash != iniBlock.Hash {
+func ValidateBlockChain(chn *Chain, genesis *Block) error {
+	chn.mux.Lock()
+	defer chn.mux.Unlock()
+
+	ib := chn.Blocks[0]
+	if ib.Hash != genesis.Hash {
 		return errors.New("invalid genesis block hash")
 	}
 	tmpChain := []*Block{ib}
-	for i := 1; i < len(bc); i++ {
-		if err := ValidateNewBlock(tmpChain[i-1], bc[i]); err != nil {
+	for i := 1; i < len(chn.Blocks); i++ {
+		if err := ValidateNewBlock(tmpChain[i-1], chn.Blocks[i]); err != nil {
 			return errors.New("invalid chain")
 		}
-		tmpChain = append(tmpChain, bc[i])
+		tmpChain = append(tmpChain, chn.Blocks[i])
 	}
 	return nil
 }
 
-// ReplaceChain replace chain
-func ReplaceChain(n []*Block) (bool, error) {
-	if err := ValidateBlockChain(n); err != nil {
-		return false, errors.New("invalid block chain")
+// RefreshChain refresh chain
+func RefreshChain(curr, received *Chain, genesis *Block) (*Chain, error) {
+	if err := ValidateBlockChain(received, genesis); err != nil {
+		return nil, errors.New("invalid block chain")
 	}
-	if len(n) > len(blockChain) {
-		blockChain = n
-		return true, nil
+	if len(received.Blocks) > len(curr.Blocks) {
+		return received, nil
 	}
-	return false, nil
+	return curr, nil
 }
