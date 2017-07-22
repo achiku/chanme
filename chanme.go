@@ -1,4 +1,4 @@
-package main
+package chanme
 
 import (
 	"crypto/sha256"
@@ -50,7 +50,7 @@ func (cn *Chain) GenerateNextBlock(data string) (*Block, error) {
 	return b, nil
 }
 
-// genesis get the first block
+// genesis the first block
 func genesis() *Block {
 	genesis := &Block{
 		Index:        0,
@@ -68,7 +68,7 @@ func Hash(b *Block) string {
 	return fmt.Sprintf("%x", sha256.Sum256([]byte(str)))
 }
 
-// ValidateNewBlock validate paired blocks
+// ValidateNewBlock validate new blocks
 func ValidateNewBlock(prev, next *Block) error {
 	switch {
 	case prev.Index+1 != next.Index:

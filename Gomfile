@@ -1,0 +1,2 @@
+gom 'github.com/btcsuite/btcutil', :commit => '501929d3d046174c3d39f0ea54ece471aa17238c'
+gom 'github.com/alecthomas/kingpin', :commit => '297a08eca3cfe76b1bc87a752ec3272fbac539ef'

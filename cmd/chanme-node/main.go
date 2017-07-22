@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/achiku/chanme"
 )
 
 // Adapter adapter
@@ -30,12 +32,12 @@ func (a Adapter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // App application
 type App struct {
-	BlockChain *Chain
+	BlockChain *chanme.Chain
 	Logger     *log.Logger
 }
 
-// GetBlocks get blocks
-func (app *App) GetBlocks(w http.ResponseWriter, r *http.Request) (int, interface{}, error) {
+// GetAllBlocks get blocks
+func (app *App) GetAllBlocks(w http.ResponseWriter, r *http.Request) (int, interface{}, error) {
 	return http.StatusOK, app.BlockChain, nil
 }
 
@@ -65,11 +67,11 @@ func main() {
 	flag.Parse()
 
 	app := App{
-		BlockChain: NewBlockChain(),
+		BlockChain: chanme.NewBlockChain(),
 		Logger:     log.New(os.Stdout, "[app]: ", log.Lmicroseconds),
 	}
 	mux := http.NewServeMux()
-	mux.Handle("/blocks", Adapter{h: app.GetBlocks})
+	mux.Handle("/blocks", Adapter{h: app.GetAllBlocks})
 	mux.Handle("/blocks/add", Adapter{h: app.CreateBlock})
 
 	if err := http.ListenAndServe(":"+*port, mux); err != nil {
