@@ -71,9 +71,9 @@ func NewPublicKey(priv *PrivateKey) *PublicKey {
 	return pub
 }
 
-// BitcoinAddress bitcoin address
-func (pub *PublicKey) BitcoinAddress(ver byte) string {
-	sh := sha256.Sum256(pub.X.Bytes())
+// Address bitcoin address
+func (pub *PublicKey) Address(ver byte) string {
+	sh := sha256.Sum256(pub.Y.Bytes())
 	r := ripemd160.New()
 	var buf []byte
 	for _, b := range sh {

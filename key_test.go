@@ -34,5 +34,5 @@ func TestGeneratePublicKey(t *testing.T) {
 	}
 	pub := NewPublicKey(priv)
 	t.Logf("%d", pub.PublicKey.X)
-	t.Logf("%s", pub.BitcoinAddress(VerMainPub))
+	t.Logf("%s", pub.Address(VerMainPub))
 }
